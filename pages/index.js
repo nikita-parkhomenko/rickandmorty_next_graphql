@@ -1,65 +1,116 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import {useState} from 'react';
+import {ApolloClient, InMemoryCache, gql} from '@apollo/client';
+import {Container, Badge, Row, Form, FormGroup, Input, Button, Alert} from 'reactstrap';
 
-export default function Home() {
-  return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+import Characters from '../components/characters';
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+export default function Home(props) {
+    const [characters, setCharacters] = useState([...props.characters]);
+    const [searchCharacter, setSearchCharacter] = useState('');
+    const [errorMessage, setErrorMessage] = useState(null);
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
+    const onDismiss = () => setErrorMessage(null);
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
+    const handleSubmit = async event => {
+        event.preventDefault();
+        const result = await fetch("/api/searchCharacter", {
+            method: "post",
+            body: searchCharacter,
+        });
+        const { characters, error } = await result.json();
+        if (error) {
+            setErrorMessage(error)
+        } else {
+            setCharacters(characters)
+        }
+    }
+    return (
+        <Container className="d-flex flex-column justify-content-center align-items-center">
+            <h1><Badge color="warning">Rick and Morty</Badge></h1>
+            {errorMessage
+                ? <Alert color="danger" toggle={onDismiss}>
+                    {errorMessage}
+                </Alert>
+                : null
+            }
+            <hr className="w-100" />
+            <Form className="mb-3" onSubmit={handleSubmit}>
+                <FormGroup className="d-flex justify-content-center">
+                    <Input
+                        type="text"
+                        name="name"
+                        placeholder="...name"
+                        value={searchCharacter}
+                        onChange={event => setSearchCharacter(event.target.value)}
+                    />
+                    <Button
+                        color="warning"
+                        className="ml-2"
+                        disabled={searchCharacter === ''}
+                    >
+                        Search
+                    </Button>
+                    <Button
+                        color="danger"
+                        className="ml-2"
+                        disabled={!searchCharacter.length}
+                        onClick={() => {
+                            setSearchCharacter('');
+                            setCharacters(props.characters)
+                        }
+                        }
+                    >
+                        Reset
+                    </Button>
+                </FormGroup>
+            </Form>
+            <Row className="d-flex justify-content-around w-100">
+                <Characters characters={characters} />
+            </Row>
+        </Container>
   )
+}
+
+export async function getStaticProps(context) {
+  const client = new ApolloClient({
+    uri: "https://rickandmortyapi.com/graphql",
+    cache: new InMemoryCache(),
+  });
+
+  const { data } = await client.query({
+    query: gql`
+      query{
+        characters(page: 1){
+          info{
+            count
+            pages
+          }
+          results{
+            name
+            id
+            location{
+              id
+              name
+            }
+            origin{
+              id
+              name
+            }
+            episode{
+              id
+              episode
+              air_date
+            }
+            image
+          }
+        }
+      }
+    `
+  });
+
+  return {
+    props: {
+      characters: data.characters.results,
+    }
+  }
 }
