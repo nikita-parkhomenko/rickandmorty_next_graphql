@@ -1,10 +1,5 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import {ApolloClient, InMemoryCache, gql} from '@apollo/client';
-
-const client = new ApolloClient({
-  uri: "https://rickandmortyapi.com/graphql",
-  cache: new InMemoryCache(),
-});
+import {gql} from '@apollo/client';
+import {client} from '../../apollo-client';
 
 export default async (req, res) => {
   const search = req.body;
@@ -15,6 +10,7 @@ export default async (req, res) => {
           characters(filter: { name: "${search}" }){
             info{
               count
+              pages
             }
             results{
               name
@@ -26,11 +22,6 @@ export default async (req, res) => {
               origin{
                 id
                 name
-              }
-              episode{
-                id
-                episode
-                air_date
               }
               image
             }

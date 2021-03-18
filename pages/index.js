@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {ApolloClient, InMemoryCache, gql} from '@apollo/client';
+import {gql} from '@apollo/client';
+import {client} from '../apollo-client';
 import {Container, Badge, Row, Form, FormGroup, Input, Button, Alert} from 'reactstrap';
 
 import Characters from '../components/characters';
@@ -28,7 +29,7 @@ export default function Home(props) {
         <Container className="d-flex flex-column justify-content-center align-items-center">
             <h1><Badge color="warning">Rick and Morty</Badge></h1>
             {errorMessage
-                ? <Alert color="danger" toggle={onDismiss}>
+                ? <Alert className="ml-auto" color="danger" toggle={onDismiss}>
                     {errorMessage}
                 </Alert>
                 : null
@@ -71,12 +72,7 @@ export default function Home(props) {
   )
 }
 
-export async function getStaticProps(context) {
-  const client = new ApolloClient({
-    uri: "https://rickandmortyapi.com/graphql",
-    cache: new InMemoryCache(),
-  });
-
+export async function getStaticProps() {
   const { data } = await client.query({
     query: gql`
       query{
@@ -95,11 +91,6 @@ export async function getStaticProps(context) {
             origin{
               id
               name
-            }
-            episode{
-              id
-              episode
-              air_date
             }
             image
           }
